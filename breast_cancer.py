@@ -14,7 +14,7 @@ from my_operators import safe_div, mylog, mypower2, mypower3, mysqrt, myexp
 import sys
 
 
-pset = gp.PrimitiveSet("MAIN", 8)
+pset = gp.PrimitiveSet("MAIN", 10)
 pset.addPrimitive(operator.add, 2)
 pset.addPrimitive(operator.sub, 2)
 pset.addPrimitive(operator.mul, 2)
@@ -28,7 +28,9 @@ pset.addPrimitive(mysqrt, 1)
 pset.addPrimitive(np.tan, 1)
 pset.addPrimitive(np.tanh, 1)
 pset.addEphemeralConstant("rand101", lambda: random.uniform(-1, 1))
-pset.renameArguments(ARG0='x0',ARG1='x1', ARG2='x2', ARG3='x3', ARG4='x4', ARG5='x5', ARG6='x6', ARG7='x7',  ARG8='x8')
+pset.renameArguments(ARG0='id',ARG1='radius', ARG2='texture', ARG3='perimeter', 
+    ARG4='area', ARG5='smooth', ARG6='compact', ARG7='concavity',  ARG8='cp',
+    ARG9='sym', ARG10='fractal', ARG11='class')
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -45,11 +47,10 @@ toolbox.register("compile", gp.compile, pset=pset)
 def evalSymbReg(individual, test, points):
     func = toolbox.compile(expr=individual)
     # print(points)
-    vector = points[8]#[data[8] for data in points]
+    vector = points[10]#[data[8] for data in points]
     # print(vector)
-    import sys
     # sys.exit()
-    result = np.sum((func(*np.asarray(points)[:8]) - vector)**2)
+    result = np.sum((func(*np.asarray(points)[:10]) - vector)**2)
     return np.sqrt(result/len(points[0])),
 
 
@@ -61,20 +62,26 @@ def energy_coolng(n_corr, num_p, problem, name_database):
     if not (os.path.exists(n_archivo) or os.path.exists(n_archivot)):
         direccion = "./data_corridas/%s/%s.txt" %(problem, name_database)
         with open(direccion) as spambase:
-            spamReader = csv.reader(spambase,  delimiter=' ', skipinitialspace=True)
+            spamReader = csv.reader(spambase,  delimiter=',', skipinitialspace=True)
             num_c = sum(1 for line in open(direccion))
             print(num_c)
-            num_r = len(next(csv.reader(open(direccion), delimiter=' ', skipinitialspace=True)))
+            # sys.exit()
+            num_r = len(next(csv.reader(open(direccion), delimiter=',', skipinitialspace=True)))
             print(num_r)
             # sys.exit()
             Matrix = np.empty((num_r, num_c,))
             for row, c in zip(spamReader, range(num_c)):
+                # print(row)
                 for r in range(num_r):
                     try:
                         Matrix[r, c] = row[r]
                     except ValueError:
-                        print 'Line {r} is corrupt', r
-                        break
+                        # print ('Line {r} is corrupt', r, c, row)
+                        print ('Line {r} is corrupt', r, c)
+                        Matrix[r, c] = -1
+                        # break
+            print('complete')
+            # sys.exit()
         if not os.path.exists(n_archivo):
             long_train=int(len(Matrix.T)*.7)
             data_train = random.sample(Matrix.T, long_train)
@@ -94,7 +101,7 @@ def energy_coolng(n_corr, num_p, problem, name_database):
                 try:
                     Matrix[r, c] = row[r]
                 except ValueError:
-                    print 'Line {r} is corrupt' , r
+                    print ('Line {r} is corrupt' , r)
                     break
         data_train=Matrix[:]
     with open(n_archivot) as spambase:
@@ -107,17 +114,19 @@ def energy_coolng(n_corr, num_p, problem, name_database):
                 try:
                     Matrix[r, c] = row[r]
                 except ValueError:
-                    print 'Line {r} is corrupt' , r
+                    print ('Line {r} is corrupt' , r)
                     break
         data_test=Matrix[:]
+    # data_train = data_train[0]
+    # data_test = data_test[0]
     # sys.exit()
     toolbox.register("evaluate", evalSymbReg, test=False, points=data_train)
     toolbox.register("evaluate_test", evalSymbReg,  test=True, points=data_test)
 
 
 def main(n_corr, num_p):
-    problem = "EnergyCooling"
-    name_database = "energy_efficiency_Cooling"
+    problem = "BreastCancer"
+    name_database = "breast-cancer-wisconsin"
     pop_size = 100
 
     energy_coolng(n_corr, num_p, problem, name_database)
